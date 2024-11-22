@@ -1,0 +1,49 @@
+version: "3.8"
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: mydb
+    volumes:
+      - mysql-data:/var/lib/mysql/
+    ports:
+      - 3306:3306
+    networks:
+      - two-tier
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-padmin"]
+      timeout: 120s
+      retries: 10
+      interval: 10s
+      start_period: 60s
+
+  flask-app:
+    build:
+      context: .
+    container_name: flask-app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: admin  # Change MYSQL_ROOT_PASSWORD to MYSQL_PASSWORD for better clarity
+      MYSQL_DB: mydb
+    ports:
+      - 5000:5000
+    networks:
+      - two-tier
+    depends_on:
+      - mysql
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/ || exit 1"]  # Make sure curl is available or use a different check
+      timeout: 120s
+      retries: 10
+      interval: 10s
+
+volumes:
+  mysql-data:
+
+networks:
+  two-tier:
+
